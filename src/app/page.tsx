@@ -10,7 +10,6 @@ import RecentOffersSection from "@/Components/Home/RecentOffer-secction";
 import FooterSection from "@/Components/Home/Footer-section";
 
 
-export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       <HeroSection />
