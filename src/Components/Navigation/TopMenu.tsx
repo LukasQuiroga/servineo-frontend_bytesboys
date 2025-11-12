@@ -53,7 +53,7 @@ export default function TopMenu() {
                 Iniciar Sesión
               </Link>
               <Link
-                href="/registro"
+                href="/signup"
                 className="bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 Regístrate
@@ -92,7 +92,7 @@ export default function TopMenu() {
                 Iniciar Sesión
               </Link>
               <Link
-                href="/registro"
+                href="/signup"
                 className="block w-full text-center text-white bg-primary mt-2 px-4 py-2 rounded-md text-base font-medium hover:bg-primary/90"
                 onClick={() => setIsOpen(false)}
               >
