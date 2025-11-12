@@ -19,9 +19,7 @@ export default function TopMenu() {
   const navItems = [
     { name: 'Inicio', href: '/' },
     { name: 'Ofertas de trabajo', href: '/job-offer-list' },
-    { name: 'Convertir-fixer', href: '/become-fixer' },  //quitar estos campos porque son de prueba
-    { name: 'mis ofertas', href: '/fixer/my-offers' },
-    { name: 'perfil', href: '/fixer/profile' },
+  
   ]
 
   return (

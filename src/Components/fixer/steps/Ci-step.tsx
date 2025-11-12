@@ -20,7 +20,7 @@ export function CIStep({ ci, onCIChange, error }: CIStepProps) {
       <div className="space-y-3">
         <div className="space-y-1">
           <label className="flex items-center gap-2 text-sm text-gray-700">
-            <CreditCard className="h-4 w-4 text-blue-600" />
+            <CreditCard className="h-4 w-4 text-primary" />
             Cédula de Identidad <span className="text-red-600">*</span>
           </label>
           <input
