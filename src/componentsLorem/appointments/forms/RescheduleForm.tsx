@@ -217,91 +217,81 @@ export default forwardRef<RescheduleFormHandle, RescheduleFormProps>(function Re
         return;
         }
 
+        // CAMBIO IMPORTANTE: En lugar de cancelar y crear, hacemos un UPDATE con los nuevos datos.
+        // Esto permite que el backend detecte el cambio de fecha y envíe la notificación de REPROGRAMACIÓN.
+        
         const updateUrl = `${API_BASE}/api/crud_update/appointments/update_by_id?id=${encodeURIComponent(originalAppointmentId)}`;
+        const { selected_date, starting_time, finishing_time } = parseNewTimes(newDatetime);
+
         const updatePayload = {
-        schedule_state: "cancelled",
-        reprogram_reason: motivo ?? "Sin motivo",
+          // Nuevos datos de fecha y hora
+          selected_date,
+          starting_time,
+          finishing_time,
+          
+          // Aseguramos que el estado sea booked (agendada) y no cancelled
+          schedule_state: "booked",
+          cancelled_fixer: false, 
+          reprogram_reason: motivo ?? "Sin motivo",
+
+          // Datos editables del formulario
+          appointment_type: modality,
+          appointment_description: description,
+          current_requester_name: client,
+          current_requester_phone: contact,
+          
+          // Datos de ubicación/enlace según modalidad
+          link_id: modality === "virtual" ? meetingLink : "",
+          display_name_location: modality === "presential" ? place : "",
+          lat: modality === "presential" ? location?.lat ?? null : null,
+          lon: modality === "presential" ? location?.lon ?? null : null,
         };
 
         const updateRes = await axios.put(updateUrl, updatePayload, {
-        headers: { "Content-Type": "application/json" },
-        timeout: 10000,
+          headers: { "Content-Type": "application/json" },
+          timeout: 10000,
         });
 
         const updateData = updateRes?.data;
         console.log("update response:", updateRes.status, updateData);
 
         if (updateRes.status >= 400 || updateData?.modified === false) {
-        throw new Error(updateData?.message || `Actualización fallida (status ${updateRes.status})`);
+          throw new Error(updateData?.message || `Actualización fallida (status ${updateRes.status})`);
         }
 
-        console.log("Cita original cancelada");
+        console.log("✅ Cita actualizada (Reprogramada)");
 
+        //  --- MOSTRAR RESUMEN ---
+        const startLocal = new Date(starting_time);
+        // Ajuste visual de hora (+4) similar al que tenías antes para mostrar al usuario
+        const adjustedHour = new Date(startLocal.getTime() + 4 * 60 * 60 * 1000); 
+        const hourStr = `${String(adjustedHour.getHours()).padStart(2, "0")}:00`;
 
-    //  --- CREAR LA NUEVA CITA ---
-    const { selected_date, starting_time, finishing_time } = parseNewTimes(newDatetime);
+        setSummaryData({
+            title: "Cita reprogramada con éxito",
+            name: client,
+            date: startLocal.toLocaleDateString(),
+            time: hourStr,
+            modality,
+            locationOrLink: modality === "virtual" ? meetingLink : place,
+            description,
+            motive: motivo || undefined,
+        });
+        setShowSummary(true);
 
-    const createPayload = {
-        id_fixer: fixerId,
-        id_requester: requesterId,
-        selected_date,
-        starting_time,
-        finishing_time,
-        schedule_state: "booked",
-        appointment_type: modality,
-        appointment_description: description,
-        current_requester_name: client,
-        current_requester_phone: contact,
-        link_id: modality === "virtual" ? meetingLink : "",
-        display_name_location: modality === "presential" ? place : "",
-        lat: modality === "presential" ? location?.lat ?? null : null,
-        lon: modality === "presential" ? location?.lon ?? null : null,
-    };
-
-    const createRes = await axios.post(`${API_BASE}/api/crud_create/appointments/create`, createPayload, {
-        headers: { "Content-Type": "application/json" },
-        timeout: 10000,
-    });
-
-    const createData = createRes?.data;
-    console.log("create response:", createRes.status, createData);
-
-    if (createRes.status >= 400 || (createData && createData.success === false)) {
-        throw new Error(createData?.message || `Creación fallida (status ${createRes.status})`);
-    }
-
-    console.log("✅ Nueva cita creada");
-
-    //  --- MOSTRAR RESUMEN ---
-    const startLocal = new Date(createPayload.starting_time);
-    const adjustedHour = new Date(startLocal.getTime() + 4 * 60 * 60 * 1000); // +4 horas
-    const hourStr = `${String(adjustedHour.getHours()).padStart(2, "0")}:00`;
-
-    setSummaryData({
-        title: "Cita reprogramada con éxito",
-        name: client,
-        date: startLocal.toLocaleDateString(),
-        time: hourStr,
-        modality,
-        locationOrLink: modality === "virtual" ? meetingLink : place,
-        description,
-        motive: motivo || undefined,
-    });
-    setShowSummary(true);
     } catch (err: any) {
-    // Mensaje claro para el usuario + logging para debugging
-    console.error("❌ Error en reprogramación:", err);
+      // Mensaje claro para el usuario + logging para debugging
+      console.error("❌ Error en reprogramación:", err);
 
-    // Si axios devolvió respuesta del servidor, muestra cuerpo y status
-    if (err?.response) {
-        console.error("axios.response.status:", err.response.status);
-        console.error("axios.response.data:", err.response.data);
-        setErrors({ general: err.response.data?.message || `Error servidor (${err.response.status})` });
-    } else {
-        setErrors({ general: err?.message || "No se pudo reprogramar" });
-    }
+      if (err?.response) {
+          console.error("axios.response.status:", err.response.status);
+          console.error("axios.response.data:", err.response.data);
+          setErrors({ general: err.response.data?.message || `Error servidor (${err.response.status})` });
+      } else {
+          setErrors({ general: err?.message || "No se pudo reprogramar" });
+      }
     } finally {
-    setLoading(false);
+      setLoading(false);
     }
 }
   if (!open) return null;

@@ -189,7 +189,7 @@ const AppointmentForm = forwardRef<AppointmentFormHandle, AppointmentFormProps>(
 
         setLoading(true);
         try {
-            const res = await axios.post("https://servineo-backend-lorem.onrender.com/api/crud_create/appointments/create", payload);
+            const res = await axios.post("http://localhost:3000/api/crud_create/appointments/create", payload);;
             const data = res.data;
 
             if (data && data.success === false) {
