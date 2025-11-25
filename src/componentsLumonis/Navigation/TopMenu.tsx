@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
+import NotificationSystem from '../../app/components/NotificationSystem' 
 
 export default function TopMenu() {
   const [isOpen, setIsOpen] = useState(false)
@@ -19,7 +20,9 @@ export default function TopMenu() {
   const navItems = [
     { name: 'Inicio', href: '/' },
     { name: 'Ofertas de trabajo', href: '/job-offer-list' },
-  
+    { name: 'Convertir-fixer', href: '/become-fixer' },
+    { name: 'mis ofertas', href: '/fixer/my-offers' },
+    { name: 'perfil', href: '/fixer/profile' },
   ]
 
   return (
@@ -46,6 +49,7 @@ export default function TopMenu() {
             </nav>
 
             <div className="hidden md:flex items-center space-x-4">
+              <NotificationSystem /> {/* <-- agregado justo al lado de Iniciar sesión */}
               <Link 
                 href="/login" 
                 className="text-gray-700 hover:text-primary px-4 py-2 rounded-md text-sm font-medium transition-colors"
@@ -83,7 +87,8 @@ export default function TopMenu() {
                 {item.name}
               </Link>
             ))}
-            <div className="pt-4 pb-2 border-t border-gray-200 px-2">
+            <div className="pt-4 pb-2 border-t border-gray-200 px-2 flex flex-col gap-2">
+              <NotificationSystem /> {/* <-- también visible en mobile */}
               <Link
                 href="/login"
                 className="block w-full text-center text-primary px-4 py-2 rounded-md text-base font-medium hover:bg-gray-50"
@@ -93,7 +98,7 @@ export default function TopMenu() {
               </Link>
               <Link
                 href="/registro"
-                className="block w-full text-center text-white bg-primary mt-2 px-4 py-2 rounded-md text-base font-medium hover:bg-primary/90"
+                className="block w-full text-center text-white bg-primary px-4 py-2 rounded-md text-base font-medium hover:bg-primary/90"
                 onClick={() => setIsOpen(false)}
               >
                 Regístrate
