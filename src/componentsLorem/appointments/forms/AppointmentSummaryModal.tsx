@@ -25,6 +25,25 @@ const AppointmentSummaryModal: React.FC<AppointmentSummaryModalProps> = ({ open,
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-auto p-6 z-10">
         <div className="flex flex-col items-center">
+
+           {/* Icono de éxito o error */}
+        <div className="flex flex-col items-center mb-4">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
+            data.errorCause ? "bg-red-100" : "bg-green-100"
+          }`}>
+            {data.errorCause ? (
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800 text-center">{data.title}</h2>
+        </div>
+          
           {/* Icono de check centrado y verde */}
           <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
