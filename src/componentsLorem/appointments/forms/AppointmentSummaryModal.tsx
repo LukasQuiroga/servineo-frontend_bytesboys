@@ -88,6 +88,32 @@ const AppointmentSummaryModal: React.FC<AppointmentSummaryModalProps> = ({ open,
               <p className="text-red-600 text-sm">{data.errorCause}</p>
             </div>
           )}
+           {/* Listas de canales enviados y fallidos */}  
+         {(data.channelsSent || data.channelsFailed) && (
+            <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              {data.channelsSent && data.channelsSent.length > 0 && (
+                <div className="mb-2">
+                  <p className="text-green-600 font-medium text-sm">Canales enviados:</p>
+                  <ul className="list-disc list-inside text-green-600 text-sm">
+                    {data.channelsSent.map((channel, index) => (
+                      <li key={index}>{channel}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {data.channelsFailed && data.channelsFailed.length > 0 && (
+                <div>
+                  <p className="text-red-600 font-medium text-sm">Canales fallidos:</p>
+                  <ul className="list-disc list-inside text-red-600 text-sm">
+                    {data.channelsFailed.map((channel, index) => (
+                      <li key={index}>{channel}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
           {/* Icono de check centrado y verde */}
           <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
