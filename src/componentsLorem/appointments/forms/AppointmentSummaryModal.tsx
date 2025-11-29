@@ -11,6 +11,9 @@ interface AppointmentSummaryModalProps {
     modality: "virtual" | "presential";
     locationOrLink: string;
     description?: string;
+    errorCause?: string;                // Nueva propiedad para mostrar errores
+    channelsSent?: string[];            // canales enviados
+    channelsFailed?: string[];          // canales fallidos
   };
 }
 
