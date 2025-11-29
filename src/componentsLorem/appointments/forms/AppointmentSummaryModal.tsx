@@ -43,7 +43,51 @@ const AppointmentSummaryModal: React.FC<AppointmentSummaryModalProps> = ({ open,
           </div>
           <h2 className="text-xl font-semibold text-gray-800 text-center">{data.title}</h2>
         </div>
-          
+
+           {/* Información de la cita */}
+        <div className="space-y-3 text-sm text-gray-700">
+          <div className="flex justify-between">
+            <span className="font-medium text-gray-500">Nombre:</span>
+            <span>{data.name}</span>
+          </div>
+          {data.date && (
+            <div className="flex justify-between">
+              <span className="font-medium text-gray-500">Fecha:</span>
+              <span>{data.date}</span>
+            </div>
+          )}
+          {data.time && (
+            <div className="flex justify-between">
+              <span className="font-medium text-gray-500">Hora:</span>
+              <span>{data.time}</span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span className="font-medium text-gray-500">Modalidad:</span>
+            <span>{data.modality === "virtual" ? "Virtual" : "Presencial"}</span>
+          </div>
+          {data.locationOrLink && (
+            <div className="flex justify-between items-start">
+              <span className="font-medium text-gray-500">
+                {data.modality === "virtual" ? "🔗 Enlace:" : "Ubicación:"}
+              </span>
+              <span className="text-right break-words max-w-[60%]">{data.locationOrLink}</span>
+            </div>
+          )}
+
+          {data.description && (
+            <div>
+              <span className="font-medium text-gray-500 block mb-1">Descripción:</span>
+              <p className="bg-gray-100 rounded p-2 text-sm">{data.description}</p>
+            </div>
+          )}
+
+          {data.errorCause && (
+            <div className="mb-3 p-3 bg-red-50 rounded-lg border border-red-200">
+              <p className="text-red-700 font-medium text-sm">Causa del error:</p>
+              <p className="text-red-600 text-sm">{data.errorCause}</p>
+            </div>
+          )}
           {/* Icono de check centrado y verde */}
           <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
