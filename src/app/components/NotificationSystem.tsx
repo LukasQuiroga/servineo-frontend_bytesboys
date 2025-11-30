@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -82,7 +82,7 @@ const SkeletonLoader = () => (
   </div>
 );
 
-type NotificationType = 'todos' | 'whatsapp' | 'email' | 'citas' | 'ofertas' | 'billetera' | 'no_leidas';
+type NotificationType = 'todos' | 'whatsapp' | 'email' | 'citas' | 'ofertas_promociones' | 'billetera' | 'no_leidas';
 
 interface INotification {
   _id: string;
@@ -140,6 +140,8 @@ const maskSensitiveData = (text: string | undefined): string => {
 };
 
 export default function NotificationSystem({ userId }: NotificationSystemProps) {
+  const [offersCountMap, setOffersCountMap] = useState<{ [key: string]: number }>({});
+  const [promotionsCountMap, setPromotionsCountMap] = useState<{ [key: string]: number }>({});
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<INotification[]>([]);
@@ -293,20 +295,26 @@ export default function NotificationSystem({ userId }: NotificationSystemProps) 
 
       // Aplicar filtro si no es 'todos'
       let filteredData = data;
-      if (currentFilter !== 'todos' && currentFilter !== 'no_leidas') {
-        filteredData = data.filter((n) => {
-          // Mapear tipos antiguos a nuevos
-          if (currentFilter === 'citas' && n.appointment_id) return true;
-          if (currentFilter === 'ofertas' && n.tipo === 'oferta') return true;
-          if (currentFilter === 'billetera' && (n.tipo === 'billetera' || n.saldo !== undefined)) return true;
-          if (n.notification_type) {
-            return n.notification_type === currentFilter;
-          }
-          if (n.tipo) {
-            return n.tipo === currentFilter;
-          }
-          return false;
-        });
+        if (currentFilter !== 'todos' && currentFilter !== 'no_leidas') {
+          if (currentFilter === 'ofertas_promociones') {
+            filteredData = data.filter((n) => {
+              if (!n.tipo || typeof n.tipo !== 'string') return false;
+              const tipoLower = n.tipo.trim().toLowerCase();
+              return tipoLower === 'oferta' || tipoLower === 'desconexion 2 dias';
+            });
+        } else {
+          filteredData = data.filter((n) => {
+            if (currentFilter === 'citas' && n.appointment_id) return true;
+            if (currentFilter === 'billetera' && (n.tipo === 'billetera' || n.saldo !== undefined)) return true;
+            if (n.notification_type) {
+              return n.notification_type === currentFilter;
+            }
+            if (n.tipo) {
+              return n.tipo === currentFilter;
+            }
+            return false;
+          });
+        }
       }
 
       // Calcular el total de notificaciones NO LEÍDAS según el filtro
@@ -385,7 +393,10 @@ export default function NotificationSystem({ userId }: NotificationSystemProps) 
             filteredData = data.filter((n) => {
               // Mapear tipos antiguos a nuevos
               if (currentFilter === 'citas' && n.appointment_id) return true;
-              if (currentFilter === 'ofertas' && n.tipo === 'oferta') return true;
+              if (currentFilter === 'ofertas_promociones' && n.tipo && typeof n.tipo === 'string') {
+                const tipoLower = n.tipo.trim().toLowerCase();
+                if (tipoLower === 'oferta' || tipoLower === 'desconexion 2 dias') return true;
+              }
               if (currentFilter === 'billetera' && (n.tipo === 'billetera' || n.saldo !== undefined)) return true;
               if (n.notification_type) {
                 return n.notification_type === currentFilter;
@@ -522,13 +533,61 @@ export default function NotificationSystem({ userId }: NotificationSystemProps) 
     }
   }, [isOpen, filter, fetchNotifications, hasLoadedOnce]);
 
+  // Consultar cantidad de ofertas nuevas para cada notificación relevante
+  useEffect(() => {
+    if (!isOpen || notifications.length === 0) return;
+    notifications.forEach((notification) => {
+      const tipoLower = notification.tipo?.trim().toLowerCase();
+      const fechaCreacion = notification.creado || notification.createdAt;
+      if ((tipoLower === 'oferta' || tipoLower === 'desconexion 2 dias') && fechaCreacion) {
+        if (offersCountMap[notification._id] === undefined) {
+          fetch(`http://localhost:3000/api/offers/count-since?date=${encodeURIComponent(fechaCreacion)}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.success && typeof data.count === 'number') {
+                setOffersCountMap((prev) => ({ ...prev, [notification._id]: data.count }));
+              } else {
+                setOffersCountMap((prev) => ({ ...prev, [notification._id]: 0 }));
+              }
+            })
+            .catch(() => {
+              setOffersCountMap((prev) => ({ ...prev, [notification._id]: 0 }));
+            });
+        }
+      }
+    });
+  }, [isOpen, notifications, offersCountMap]);
+
+  // Consultar cantidad de promociones nuevas para cada notificación relevante
+  useEffect(() => {
+    if (!isOpen || notifications.length === 0) return;
+    notifications.forEach((notification) => {
+      const tipoLower = notification.tipo?.trim().toLowerCase();
+      const fechaCreacion = notification.creado || notification.createdAt;
+      if (tipoLower === 'desconexion 2 dias' && fechaCreacion) {
+        if (promotionsCountMap[notification._id] === undefined) {
+          fetch(`http://localhost:3000/api/promotions/count-since?date=${encodeURIComponent(fechaCreacion)}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.success && typeof data.count === 'number') {
+                setPromotionsCountMap((prev) => ({ ...prev, [notification._id]: data.count }));
+              } else {
+                setPromotionsCountMap((prev) => ({ ...prev, [notification._id]: 0 }));
+              }
+            })
+            .catch(() => {
+              setPromotionsCountMap((prev) => ({ ...prev, [notification._id]: 0 }));
+            });
+        }
+      }
+    });
+  }, [isOpen, notifications, promotionsCountMap]);
+
 
   const handleMarkAsRead = async (notification: INotification) => {
     if (notification.leido || readNotifications.has(notification._id)) {
-      // Si ya está leída, solo redirigir si tiene acción
-      if (notification.action_url || notification.appointment_id) {
-        handleNotificationClick(notification);
-      }
+      // Si ya está leída, igual ejecutar la redirección para los tipos especiales
+      handleNotificationClick(notification);
       return;
     }
 
@@ -580,8 +639,16 @@ export default function NotificationSystem({ userId }: NotificationSystemProps) 
       return;
     }
 
-    if (notification.tipo === 'oferta' || notification.notification_type === 'ofertas') {
-      router.push('/fixer/my-offers');
+    if (notification.tipo && typeof notification.tipo === 'string') {
+      const tipoLower = notification.tipo.trim().toLowerCase();
+                if (tipoLower === 'oferta' || tipoLower === 'desconexion 2 dias' || filter === 'ofertas_promociones') {
+        window.location.href = 'http://localhost:3001/job-offer-list';
+        setIsOpen(false);
+        return;
+      }
+    }
+    if (filter === 'ofertas_promociones') {
+      window.location.href = 'http://localhost:3001/job-offer-list';
       setIsOpen(false);
       return;
     }
@@ -654,7 +721,8 @@ export default function NotificationSystem({ userId }: NotificationSystemProps) 
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 sm:absolute sm:inset-auto sm:top-full sm:right-24 sm:mt-2 pointer-events-none"          role="dialog"
+          className="fixed inset-0 z-50 sm:absolute sm:inset-auto sm:top-full sm:right-24 sm:mt-2 pointer-events-none"
+          role="dialog"
           aria-modal="true"
           aria-label="Panel de notificaciones"
         >
@@ -722,7 +790,7 @@ export default function NotificationSystem({ userId }: NotificationSystemProps) 
                   <option value="whatsapp">WhatsApp</option>
                   <option value="email">Email</option>
                   <option value="citas">Citas</option>
-                  <option value="ofertas">Ofertas</option>
+                  <option value="ofertas_promociones">Ofertas y Promociones</option>
                   <option value="billetera">Billetera</option>
                 </select>
                 <div className="absolute right-3 top-8 sm:top-9 pointer-events-none">
@@ -768,6 +836,142 @@ export default function NotificationSystem({ userId }: NotificationSystemProps) 
 
               {notifications.map((notification) => {
                 const isRead = notification.leido || readNotifications.has(notification._id);
+                const tipoLower = notification.tipo?.trim().toLowerCase();
+                
+                // Para "desconexion 2 dias", crear AMBAS notificaciones (oferta y promociones)
+                if (tipoLower === 'desconexion 2 dias') {
+                  const nombre = userId ? userId : 'requester';
+                  const fechaCreacion = notification.creado || notification.createdAt;
+                  let cantidad = offersCountMap[notification._id];
+                  if (cantidad === undefined) cantidad = 0;
+                  if (cantidad === null) cantidad = 0;
+                  let cantidadPromos = promotionsCountMap?.[notification._id];
+                  if (cantidadPromos === undefined) cantidadPromos = 0;
+                  if (cantidadPromos === null) cantidadPromos = 0;
+                  
+                  return (
+                    <React.Fragment key={notification._id}>
+                      {/* Notificación de OFERTAS */}
+                      <div
+                        onClick={() => handleMarkAsRead(notification)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleMarkAsRead(notification);
+                          }
+                        }}
+                        className={`p-3 sm:p-4 border-b border-gray-100 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          isRead ? 'bg-white hover:bg-gray-50' : 'bg-blue-50 hover:bg-blue-100'
+                        }`}
+                        role="listitem"
+                        tabIndex={0}
+                        aria-label={`Notificación personalizada para ofertas: ${nombre}`}
+                      >
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-1.5 sm:mt-2 ${isRead ? 'bg-gray-300' : 'bg-blue-600'}`} aria-hidden="true" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1 gap-2">
+                              <span className="text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded flex-shrink-0 bg-orange-100 text-orange-800">OFERTA</span>
+                              <span className="text-[10px] sm:text-xs text-gray-500 flex-shrink-0">
+                                {fechaCreacion ? timeAgo(fechaCreacion) : 'Fecha no disponible'}
+                              </span>
+                            </div>
+                            <p className={`text-xs sm:text-sm ${isRead ? 'text-gray-700' : 'text-gray-900 font-medium'}`}>
+                              Hola {nombre}
+                            </p>
+                            <p className={`text-xs sm:text-sm ${isRead ? 'text-gray-700' : 'text-gray-900 font-medium'}`}>
+                              {cantidad} nuevos trabajos públicos desde tu última visita
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Notificación de PROMOCIONES */}
+                      <div
+                        onClick={() => handleMarkAsRead(notification)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleMarkAsRead(notification);
+                          }
+                        }}
+                        className={`p-3 sm:p-4 border-b border-gray-100 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          isRead ? 'bg-white hover:bg-gray-50' : 'bg-blue-50 hover:bg-blue-100'
+                        }`}
+                        role="listitem"
+                        tabIndex={0}
+                        aria-label={`Notificación personalizada para promociones: ${nombre}`}
+                      >
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-1.5 sm:mt-2 ${isRead ? 'bg-gray-300' : 'bg-blue-600'}`} aria-hidden="true" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1 gap-2">
+                              <span className="text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded flex-shrink-0 bg-green-100 text-green-800">PROMOCIONES</span>
+                              <span className="text-[10px] sm:text-xs text-gray-500 flex-shrink-0">
+                                {fechaCreacion ? timeAgo(fechaCreacion) : 'Fecha no disponible'}
+                              </span>
+                            </div>
+                            <p className={`text-xs sm:text-sm ${isRead ? 'text-gray-700' : 'text-gray-900 font-medium'}`}>
+                              Hola {nombre}
+                            </p>
+                            <p className={`text-xs sm:text-sm ${isRead ? 'text-gray-700' : 'text-gray-900 font-medium'}`}>
+                              {cantidadPromos} nuevas promociones desde tu última visita
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </React.Fragment>
+                  );
+                }
+                
+                // Para notificaciones de tipo "oferta" individuales
+                if (tipoLower === 'oferta' || filter === 'ofertas_promociones') {
+                  const nombre = userId ? userId : 'requester';
+                  const fechaCreacion = notification.creado || notification.createdAt;
+                  let cantidad = offersCountMap[notification._id];
+                  if (cantidad === undefined) cantidad = 0;
+                  if (cantidad === null) cantidad = 0;
+                  
+                  return (
+                    <div
+                      key={notification._id}
+                      onClick={() => handleMarkAsRead(notification)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleMarkAsRead(notification);
+                        }
+                      }}
+                      className={`p-3 sm:p-4 border-b border-gray-100 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        isRead ? 'bg-white hover:bg-gray-50' : 'bg-blue-50 hover:bg-blue-100'
+                      }`}
+                      role="listitem"
+                      tabIndex={0}
+                      aria-label={`Notificación personalizada para ofertas: ${nombre}`}
+                    >
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-1.5 sm:mt-2 ${isRead ? 'bg-gray-300' : 'bg-blue-600'}`} aria-hidden="true" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1 gap-2">
+                            <span className="text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded flex-shrink-0 bg-orange-100 text-orange-800">OFERTA</span>
+                            <span className="text-[10px] sm:text-xs text-gray-500 flex-shrink-0">
+                              {fechaCreacion ? timeAgo(fechaCreacion) : 'Fecha no disponible'}
+                            </span>
+                          </div>
+                          <p className={`text-xs sm:text-sm ${isRead ? 'text-gray-700' : 'text-gray-900 font-medium'}`}>
+                            Hola {nombre}
+                          </p>
+                          <p className={`text-xs sm:text-sm ${isRead ? 'text-gray-700' : 'text-gray-900 font-medium'}`}>
+                            {cantidad} nuevos trabajos públicos desde tu última visita
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                // ...existing code para otras notificaciones...
+                // ...existing code...
+                // Copiar el bloque original aquí para las demás notificaciones
                 return (
                   <div
                     key={notification._id}
