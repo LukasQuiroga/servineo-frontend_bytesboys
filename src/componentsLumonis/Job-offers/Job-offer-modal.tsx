@@ -15,8 +15,8 @@ export function JobOfferModal({ offer, isOpen, onClose }: Props) {
     if (!isOpen || !offer) return null
     const handleClickCalendar = () => {
 
-        sessionStorage.setItem('fixer_id','68e87a9cdae3b73d8040102f');
-        sessionStorage.setItem('requester_id', '68ec99ddf39c7c140f42fcfa');
+        sessionStorage.setItem('fixer_id','68f559f3f5c96a8e785049b2');
+        sessionStorage.setItem('requester_id', '68f77eedbd5863ef506642bc');
         sessionStorage.setItem('roluser', 'requester');
 
     };
