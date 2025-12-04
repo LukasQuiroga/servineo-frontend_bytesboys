@@ -291,6 +291,7 @@ export default function TopMenu() {
             )}
           </div>
         </div>
+        
         {/* Barra inferior fija con iconos */}
         <nav className='fixed bottom-0 left-0 right-0 h-16 border-t border-gray-200 bg-white/95 backdrop-blur-sm flex justify-around items-center z-50'>
           {navItems.map((item) => (
