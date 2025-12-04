@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Wrench, UserCircle, ClipboardList, HelpCircle } from 'lucide-react';
+import { Wrench, UserCircle, Home, Briefcase, HelpCircle } from 'lucide-react';
 import { useGetUserByIdQuery } from '@/app/redux/services/userApi';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUser } from '@/app/redux/slice/userSlice';
 import { IUser } from '@/types/user';
 import NotificationSystem from '@/app/components/NotificationSystem';
+import { useTranslations } from 'next-intl';
 
 interface UserState {
   user: IUser | null;
@@ -21,6 +22,7 @@ interface RootState {
 }
 
 export default function TopMenu() {
+  const t = useTranslations('TopMenu');
   const dispatch = useDispatch();
   const { user, loading } = useSelector((state: RootState) => state.user);
 
@@ -33,14 +35,10 @@ export default function TopMenu() {
   const logoRef = useRef<HTMLButtonElement | null>(null);
 
   const navItems = [
-    { name: 'Servicios', href: '/servicios', icon: <Wrench className='h-5 w-5' /> },
+    { name: t('nav.home'), href: '/', icon: <Home className='h-5 w-5' /> },
+    { name: t('nav.jobOffers'), href: '/job-offer-list', icon: <Briefcase className='h-5 w-5' /> },
     {
-      name: 'Ofertas de trabajo',
-      href: '/job-offer-list',
-      icon: <ClipboardList className='h-5 w-5' />,
-    },
-    {
-      name: 'Ayuda',
+      name: t('nav.help'),
       href: '/ask-for-help/centro_de_ayuda',
       icon: <HelpCircle className='h-5 w-5' />,
     },
@@ -108,6 +106,7 @@ export default function TopMenu() {
     }
   };
 
+  // Botón de rol para Desktop
   const getRoleButton = () => {
     if (loading || !user) return null;
     if (!user.role) return null;
@@ -116,10 +115,10 @@ export default function TopMenu() {
       return (
         <Link
           href='/become-fixer'
-          className='flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-[var(--color-primary)] border border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors'
+          className='flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-primary transition-colors'
         >
           <Wrench className='h-4 w-4' />
-          Convertir a Fixer
+          {t('buttons.becomeFixer')}
         </Link>
       );
     }
@@ -128,10 +127,10 @@ export default function TopMenu() {
       return (
         <Link
           href='/fixer/dashboard'
-          className='flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-[var(--color-primary)] text-white hover:opacity-90 transition-opacity'
+          className='flex items-center gap-2 text-white px-4 py-2 rounded-md text-sm font-medium bg-primary transition-colors'
         >
           <UserCircle className='h-4 w-4' />
-          Perfil de Fixer
+          {t('buttons.fixerProfile')}
         </Link>
       );
     }
@@ -187,6 +186,8 @@ export default function TopMenu() {
               ))}
             </nav>
           </div>
+
+          {/* Desktop Right */}
           <div className='flex items-center gap-3'>
             <NotificationSystem 
               userId={userId || undefined}
@@ -198,28 +199,27 @@ export default function TopMenu() {
               <>
                 <Link
                   href='/login'
-                  className='px-4 py-2 rounded-md bg-[var(--color-primary)] text-white font-medium hover:opacity-90 transition-opacity'
+                  className='text-gray-700 hover:text-primary px-4 py-2 rounded-md text-sm font-medium transition-colors'
                 >
-                  Iniciar Sesión
+                  {t('buttons.login')}
                 </Link>
                 <Link
                   href='/signUp'
-                  className='px-4 py-2 rounded-md border border-[var(--color-primary)] text-[var(--color-primary)] font-medium hover:opacity-80 transition-opacity'
+                  className='bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors'
                 >
-                  Registrarse
+                  {t('buttons.register')}
                 </Link>
               </>
             ) : (
               <>
                 {getRoleButton()}
+
                 <div className='relative' ref={dropdownRef}>
                   <button
                     onClick={() => setAccountOpen(!accountOpen)}
-                    className='flex items-center gap-2 cursor-pointer px-3 py-1 border border-gray-300 bg-white rounded-xl transition'
+                    className='text-gray-700 hover:text-primary px-4 py-2 rounded-md text-sm font-medium transition-colors'
                   >
-                    <span className='font-medium text-gray-700 hover:text-primary'>
-                      {user?.name}
-                    </span>
+                    {t('buttons.myAccount')}
                   </button>
                   {accountOpen && (
                     <div className='absolute right-0 mt-2 w-44 bg-white shadow-lg border border-gray-200 rounded-md py-2 z-50'>
@@ -227,13 +227,13 @@ export default function TopMenu() {
                         href='/requesterEdit'
                         className='block px-4 py-2 text-gray-700 hover:bg-gray-50'
                       >
-                        Editar perfil
+                        {t('dropdown.editProfile')}
                       </Link>
                       <button
                         onClick={logout}
                         className='w-full text-left px-4 py-2 text-red-600 hover:bg-red-50'
                       >
-                        Cerrar sesión
+                        {t('dropdown.logout')}
                       </button>
                     </div>
                   )}
@@ -266,19 +266,20 @@ export default function TopMenu() {
               isAuthenticated={isLogged}
               userRole={user?.role as 'fixer' | 'requester'}
             />
+            
             {!isLogged ? (
               <>
                 <Link
                   href='/login'
                   className='px-3 py-2 rounded-md text-[var(--color-primary)] font-medium text-[11px] sm:text-sm hover:opacity-90 transition-opacity whitespace-nowrap'
                 >
-                  Iniciar sesión
+                  {t('buttons.login')}
                 </Link>
                 <Link
                   href='/signUp'
                   className='px-3 py-2 rounded-md bg-[var(--color-primary)] text-white font-medium text-[11px] sm:text-sm hover:opacity-90 transition-opacity whitespace-nowrap'
                 >
-                  Registrarse
+                  {t('buttons.register')}
                 </Link>
               </>
             ) : (
@@ -290,8 +291,28 @@ export default function TopMenu() {
               </button>
             )}
           </div>
+
+          {/* Dropdown Mobile */}
+          {accountOpen && isLogged && (
+            <div
+              ref={dropdownRef}
+              className='absolute top-16 right-3 w-44 bg-white shadow-lg border border-gray-200 rounded-md py-2 z-50'
+            >
+              <Link
+                href='/requesterEdit'
+                className='block px-4 py-2 text-gray-700 hover:bg-gray-50'
+              >
+                {t('dropdown.editProfile')}
+              </Link>
+              <button
+                onClick={logout}
+                className='w-full text-left px-4 py-2 text-red-600 hover:bg-red-50'
+              >
+                {t('dropdown.logout')}
+              </button>
+            </div>
+          )}
         </div>
-        
         {/* Barra inferior fija con iconos */}
         <nav className='fixed bottom-0 left-0 right-0 h-16 border-t border-gray-200 bg-white/95 backdrop-blur-sm flex justify-around items-center z-50'>
           {navItems.map((item) => (
